@@ -1,12 +1,32 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import time, datetime
+import time, datetime, psutil
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from sklearn.metrics import *
+import pandas as pd
+import numpy as np
+import seaborn as sns
+
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.linear_model import ElasticNet
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import GridSearchCV
+from hypopt import GridSearch
+from sklearn.linear_model import ElasticNetCV
+from sklearn.model_selection import GridSearchCV
+from sklearn.datasets import make_regression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+
 
 ### PREPROCESSING ### 
+
+
 train = pd.read_csv('BPI_Challenge_2012-training.csv')
 test = pd.read_csv('BPI_Challenge_2012-test.csv')
 
@@ -201,18 +221,10 @@ test.to_csv('preprocessed_test.csv')
 df = pd.read_csv('preprocessed_train.csv')
 test = pd.read_csv('preprocessed_test.csv')
 
-
 # # Naive estimator
-
-# In[3]:
-
 
 case_ids=df["case concept:name"].unique()
 event_types=df["event concept:name"].unique()
-
-
-# In[4]:
-
 
 def make_dict(event_types):
     fn={}
@@ -223,12 +235,7 @@ def make_dict(event_types):
     for j in event_types:
         fn[j]=cnt
     return fn
-info=make_dict(event_types)       
-    
-
-
-# In[5]:
-
+info=make_dict(event_types)           
 
 case_ids=df["case concept:name"].unique()
 case_ids_test=test["case concept:name"].unique()
@@ -259,10 +266,6 @@ def  naive_est(case_ids):
 
 naive_est(case_ids)    
 
-
-# In[6]:
-
-
 mp={ j:index+1 for index, j in enumerate(event_types)}
 
 def label_event(x):
@@ -273,10 +276,6 @@ def label_event(x):
 df["label_y"]= df["event concept:name"].apply(label_event)
 df["label_ypred"]= df["next_event"].shift(1).apply(label_event)
 df["label_ypred"].head()
-
-
-# In[7]:
-
 
 y_actu = df["label_y"] 
 y_pred = df["label_ypred"]
@@ -293,10 +292,6 @@ def rev(x):
 new_df["pred"]= new_df["resu"].apply(rev)
 new_df["resu"]=new_df["resu"].apply(rev)
 
-
-# In[8]:
-
-
 #confusion matrix
 from sklearn.metrics import confusion_matrix
 tn, fp, fn, tp = confusion_matrix(new_df["resu"],new_df["pred"], labels=[0, 1]).ravel()
@@ -304,11 +299,6 @@ print(tn, fp, fn, tp)
 
 sm= { "TP":[tp,0], "TN":[0,tn]}
 dm= pd.DataFrame(sm,index=["TP","TN"])
-dm
-
-
-# In[9]:
-
 
 #plot acc per label
 acc_label={}
@@ -320,17 +310,11 @@ for label in range(1,25):
     psize= curr["label_y"].size
     acc_label[label]=  p/psize
     
-    
-
 pm= {mp[key]:key for key in mp}
 fn_vis= {pm[key]: acc_label[key] for key in acc_label }
 
 ax =pd.DataFrame(fn_vis,index=["acc"]).stack().plot(kind="barh",figsize=(8,8))
 ax.set_xlabel("Accuracy")  
-
-
-# In[10]:
-
 
 f1=f1_score(df["label_y"], df["label_ypred"], average='weighted')
 glob_acc= (df["label_y"].eq(df["label_ypred"])).sum() /df["label_y"].size
@@ -342,12 +326,6 @@ df_stats
 
 
 # ## CPU/RAM usage
-
-# In[12]:
-
-
-import psutil
-import time
 
 # start measuring CPU and memory usage
 process = psutil.Process()
@@ -418,66 +396,22 @@ def MAE(test):
 
 
 
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 
 # pip install hypopt 
-
-
-# In[1]:
-
-
-import pandas as pd
-import numpy as np
-
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, confusion_matrix
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.linear_model import ElasticNet
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.model_selection import GridSearchCV
-from hypopt import GridSearch
-import seaborn as sns
-from sklearn.linear_model import ElasticNetCV
-from sklearn.linear_model import ElasticNet
-from sklearn.model_selection import GridSearchCV
-from sklearn.datasets import make_regression
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import matplotlib.pyplot as plt
-
-
-# In[2]:
-
 
 train = pd.read_csv('preprocessed_train.csv')
 test = pd.read_csv('preprocessed_test.csv')
 
 
 # # remove last event for each case in order to not break the model when accessing the next event time + make predictions on seconds_next + do tuning (grid search, feature selection) and cv
-# 
 
 # # Removing the last event from each case to reduce noise in the models
-
-# In[3]:
-
 
 train.drop(train.groupby('case concept:name').tail(1).index, axis=0, inplace=True)
 test.drop(test.groupby('case concept:name').tail(1).index, axis=0, inplace=True)
 
-
 # # Evaluation
 # 
-
-# In[4]:
-
 
 def time_evaluation(y_test, y_pred, model: str):
  
@@ -506,9 +440,6 @@ def event_evaluation(y_test, y_pred, model: str, avg="weighted"):
 
 # # Data splitting and encoding
 
-# In[5]:
-
-
 # def make_val_set(dataframe):
 #     """make a validation set from the dataframe"""
     
@@ -526,10 +457,6 @@ def event_evaluation(y_test, y_pred, model: str, avg="weighted"):
     
 #     return val_set, train
 
-
-# In[6]:
-
-
 train_LE = train.copy()
 train_LE = train_LE.replace({'event lifecycle:transition': {'SCHEDULE': 0, 'START': 1, 'COMPLETE': 2}})
 
@@ -542,8 +469,6 @@ train_OHE = pd.get_dummies(train_LE, prefix = ['current', 'prev', '2prev'],
 test_OHE = pd.get_dummies(test_LE, prefix = ['current', 'prev', '2prev'], 
                           columns = ['event concept:name', 'prev_event', '2prev_event'])
 
-
-
 # val_OHE = train_OHE.loc[147054:]
 # train_OHE = train_OHE.loc[:147054]
 
@@ -553,25 +478,13 @@ test_OHE = pd.get_dummies(test_LE, prefix = ['current', 'prev', '2prev'],
 # first_test_event_timestamp = test_OHE['event time:timestamp'].min()
 # val_OHE = val_OHE.groupby('case concept:name').filter(lambda g: g['event time:timestamp'].min() < first_test_event_timestamp and g['event time:timestamp'].max() < first_test_event_timestamp)
 
-
-# In[10]:
-
-
 # train_OHE.shape, val_OHE.shape, test_OHE.shape, train_LE.shape, test_LE.shape
-
-
-# In[11]:
-
 
 temp3 = []
 for element in list(train_OHE.columns):
     if element not in list(test_OHE.columns):
         temp3.append(element)
 print('events that happen in the train but not the test set: ' + str(temp3))
-
-
-# In[12]:
-
 
 features_time = ['timestamp_finish', 'seconds_prev', 'active cases', 'day_week', 'time_of_day', 
                  'case AMOUNT_REQ', 'event lifecycle:transition', 
@@ -696,13 +609,7 @@ X_test_event[['current_W_Wijzigen contractgegevens', 'prev_W_Wijzigen contractge
 # X_test_event[['current_W_Wijzigen contractgegevens']]=0
 
 
-# In[13]:
-
-
 X_train_event.shape, X_train_time.shape, X_test_event.shape, X_test_time.shape
-
-
-# In[14]:
 
 
 # ohe = OneHotEncoder().fit(train['event concept:name'].to_numpy().reshape(-1, 1))
@@ -712,9 +619,6 @@ X_train_event.shape, X_train_time.shape, X_test_event.shape, X_test_time.shape
 
 
 # # Event prediction
-
-# In[15]:
-
 
 def RandomForestEvents(X_train, y_train, X_val, y_val):
     
@@ -732,21 +636,12 @@ def RandomForestEvents(X_train, y_train, X_val, y_val):
     return grid.best_estimator_
 
 
-# In[16]:
-
-
 rf_event = RandomForestEvents(X_train_event, y_train_event, X_test_event, y_test_event)
-
-
-# In[17]:
 
 
 rf_event_train = rf_event.predict(X_train_event)
 # rf_event_val = rf_event.predict(X_val_event)
 rf_event_test = rf_event.predict(X_test_event)
-
-
-# In[18]:
 
 
 print(rf_event.get_params())
@@ -757,8 +652,6 @@ event_evaluation(y_test_event, rf_event_test, 'RF EVENT TEST')
 
 
 # # Time prediction
-
-# In[19]:
 
 
 def RandomForestTime(X_train, y_train, X_val, y_val):
@@ -776,22 +669,11 @@ def RandomForestTime(X_train, y_train, X_val, y_val):
     return grid.best_estimator_
 
 
-# In[20]:
-
-
 rf_time = RandomForestTime(X_train_time, y_train_time, X_test_time, y_test_time)
-
-
-# In[21]:
-
 
 rf_time_train = rf_time.predict(X_train_time)
 # rf_time_val = rf_time.predict(X_val_time)
 rf_time_test = rf_time.predict(X_test_time)
-
-
-# In[22]:
-
 
 print(rf_time.get_params())
 
@@ -801,9 +683,6 @@ time_evaluation(y_test_time, rf_time_test, 'RF TIME TEST')
 
 
 # # Decision Tree time prediction
-
-# In[ ]:
-
 
 from sklearn.tree import DecisionTreeRegressor
 
@@ -827,10 +706,6 @@ def DecisionTreeTime(X_train, X_test, y_train, y_test):
 dt_time, y_pred_dt_time = DecisionTreeTime(X_train, X_test, y_train, y_test)
 time_evaluation(y_test['seconds_next'], y_pred_dt_time, 'Decision tree regressor')
 
-
-# In[ ]:
-
-
 # get feature importances and their names
 feature_importances_dt_time = dt_time.feature_importances_
 feature_names_dt_time = ['seconds_prev', 'timestamp_finish', 'prev_event', 'event concept:name', '2prev_event']
@@ -851,12 +726,6 @@ plt.show()
 # ## Time, Memory and CPU usage
 
 # ### Memory and CPU usage
-
-# In[ ]:
-
-
-import psutil
-import time
 
 # start measuring CPU and memory usage
 process = psutil.Process()
@@ -884,8 +753,6 @@ print(f"Memory usage: {memory_usage:.2f} MB")
 
 # ### Time usage
 
-# In[ ]:
-
 
 start_time = time.time()
 
@@ -912,9 +779,6 @@ print(f"Time taken by RandomForestTime: {time.time() - start_time} seconds")
 
 # ### Confusion matrix for Random Forest estimator
 
-# In[ ]:
-
-
 cm = confusion_matrix(y_test['next_event'], y_pred_event, normalize='true')
 
 # plot confusion matrix as a heatmap
@@ -929,9 +793,6 @@ plt.show()
 
 # ### Naive and Random Forest estimators accuracy and precision
 
-# In[ ]:
-
-
 # plot the naive and random forest f1, acc, pre, recall
 metrics_df = pd.DataFrame({
     ' ': ['F1 Score', 'Accuracy', 'Precision', 'Recall'],
@@ -944,9 +805,6 @@ metrics_df
 
 
 # ### Bar chart for feature importance of Random Forest event estimator
-
-# In[ ]:
-
 
 import matplotlib.pyplot as plt
 
@@ -969,9 +827,6 @@ plt.show()
 
 
 # ### Bar chart feature importance Random Forest time estimator
-
-# In[ ]:
-
 
 # get feature importances and their names
 importances = forest_time.feature_importances_
@@ -1259,9 +1114,6 @@ def make_val_set(dataframe):
 val_OHE, train_OHE = make_val_set(train_OHE)
 
 
-# In[7]:
-
-
 x_train_time = train_OHE[['case AMOUNT_REQ','timestamp_finish', 'day_week', 'time_of_day','seconds_prev', 'type_A_ACCEPTED', 'type_A_ACTIVATED', 'type_A_APPROVED','type_A_CANCELLED', 'type_A_DECLINED', 'type_A_FINALIZED','type_A_PARTLYSUBMITTED', 'type_A_PREACCEPTED', 'type_A_REGISTERED','type_A_SUBMITTED', 'type_O_ACCEPTED', 'type_O_CANCELLED','type_O_CREATED', 'type_O_DECLINED', 'type_O_SELECTED', 'type_O_SENT','type_O_SENT_BACK', 'type_W_Afhandelen leads','type_W_Beoordelen fraude', 'type_W_Completeren aanvraag','type_W_Nabellen incomplete dossiers', 'type_W_Nabellen offertes','type_W_Valideren aanvraag', 'type_W_Wijzigen contractgegevens']]
 
 y_train_time = train_OHE['seconds_next']
@@ -1293,29 +1145,16 @@ y_test_time
 # Alpha in sklearn is lambda
 # 
 
-# In[11]:
-
-
 parameters = {"l1_ratio": [.1, .3 ,.5,.85,.95, .99, 1],
               'alpha':[0.1,0.3,0.5,0.7,0.9,1],
               'max_iter': [4000,5000]}
-
-
-# In[9]:
 
 
 regr = ElasticNetCV(cv=5,random_state=2,l1_ratio = l1,alphas = alphas,max_iter=5000 ) 
 regr.fit(x_train_time, y_train_time)
 
 
-# In[ ]:
-
-
 y_pred_time = regr.predict(x_test_time)
-
-
-# In[14]:
-
 
 def time_evaluation(y_test, y_pred, model: str):
  
@@ -1325,15 +1164,7 @@ def time_evaluation(y_test, y_pred, model: str):
     print('Root Mean Squared Error:', round(np.sqrt(mean_squared_error(y_test, y_pred)/3600),3))
     print('R2 score:', round(r2_score(y_test, y_pred),3))
 
-
-# In[ ]:
-
-
 time_evaluation(y_test_time, y_pred_time, 'Elastic net')
-
-
-# In[12]:
-
 
 eNet = ElasticNet()
 grid = GridSearchCV(eNet, param_grid = parameters,scoring='r2',cv=5,verbose=1)
@@ -1362,9 +1193,6 @@ df_test.drop('eventID ', axis=1, inplace=True)
 
 # # Data preprocessing
 
-# In[29]:
-
-
 #Apply label encoding to event lifecycle:transistion column in train data. 0: schedule, 1: start, 2: complete
 df_train_LE = df_train.copy()
 df_train_LE = df_train_LE.replace({'event lifecycle:transition': {'SCHEDULE': 0, 'START': 1, 'COMPLETE': 2}})
@@ -1378,14 +1206,8 @@ df_train_OHE = pd.get_dummies(df_train_LE, prefix=['type'], columns = ['event co
 #Note: df_train_OHE stands for 'dataframe train one hot encoded'
 
 
-# In[35]:
-
-
 #To show NaN values are all for the same cases. Therefore these rows can dropped from the dataframe
 df_train_OHE[df_train_OHE['event org:resource'].isna()].head()
-
-
-# In[57]:
 
 
 #Normalize case AMOUNT_REQ and event org:resource columns in train data
